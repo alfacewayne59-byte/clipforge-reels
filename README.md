@@ -1,28 +1,32 @@
 # ClipForge Reels
 
-AI-assisted short-form video studio. React/Vite frontend and Node/Express processing API for converting videos you own or are authorized to use into vertical clips.
+AI-assisted short-form video studio. Existing Home, Clip Studio, Queue and Library views are retained.
 
-## Features
-- Responsive dark four-tab studio: Home, Clip Studio, Queue, Library.
-- Local MP4/MOV/WebM/MKV uploads with progress.
-- URL recognition for YouTube/Vimeo/direct links. URL downloading is intentionally not included; upload an authorized local copy.
-- FFmpeg 9:16/1:1/16:9 H.264 rendering, optional script captions, 30/60 FPS.
-- In-memory render queue and export library.
-- Optional Gemini script generation via GEMINI_API_KEY.
+## New integrations
+- Gemini script generation.
+- Gemini text-to-speech with selectable prebuilt voices and downloadable WAV narration; narration can be included in final MP4.
+- Face-aware reframing using OpenCV face detection and sampled centre keyframes, with centre-crop fallback.
+- YouTube/Vimeo single-video import through yt-dlp. The app requires an explicit rights confirmation; only import media you own or have permission to download/edit, and follow platform terms.
 
-## Run
-Requirements: Node 20+, FFmpeg and FFprobe on PATH.
+## Requirements
+Node.js 20+, FFmpeg/FFprobe, yt-dlp, Python 3 and OpenCV Python package, plus a Gemini API key with access to text and TTS models.
 
-    npm install
-    npm run install:server
-    cp server/.env.example server/.env
-    npm run dev
+## Setup
+```bash
+npm install
+npm run install:server
+python3 -m pip install -r server/requirements.txt
+cp server/.env.example server/.env
+# Set GEMINI_API_KEY in server/.env
+npm run dev
+```
+Frontend http://localhost:5173; API http://localhost:8787. On Windows set PYTHON_BIN=python if needed.
 
-Frontend: http://localhost:5173; API: http://localhost:8787.
-
-Production: npm run build && npm start. Configure persistent UPLOAD_DIR and OUTPUT_DIR. The starter queue is in-memory; use Redis/BullMQ and object storage before scaling.
+## Environment
+See server/.env.example. Defaults: GEMINI_MODEL=gemini-2.0-flash and GEMINI_TTS_MODEL=gemini-2.5-flash-preview-tts. Check current Google AI availability and billing for your account.
 
 ## API
-GET /api/health; POST /api/upload (multipart field video); POST /api/jobs; GET /api/jobs; GET /api/jobs/:id; GET /api/library; POST /api/scripts/generate; GET /api/exports/:filename.
+POST /api/upload; POST /api/import/url; POST /api/scripts/generate; POST /api/tts/generate; GET /api/narrations/:id; POST /api/jobs; GET /api/jobs; GET /api/jobs/:id; GET /api/library; GET /api/exports/:filename; GET /api/health.
 
-Production checklist: add authentication, per-user quotas, rate limits, malware scanning, durable jobs/storage, licensed transcription for word timestamps, a configured TTS provider, and authorized social integrations. Only process media you own or have permission to use.
+## Production notes
+The job queue and media registries are in-memory and reset on restart. Add authentication, per-user quotas, rate limits, durable jobs/storage, upload scanning, timeouts and media isolation before public deployment. Face centering is a lightweight Haar-cascade baseline, not a state-of-the-art multi-object tracker. Gemini features consume API quota.
